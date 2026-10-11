@@ -4,7 +4,7 @@ services:
     runtime: node
     region: oregon
     plan: free
-    buildCommand: npm install --build-from-source && npm run build
+    buildCommand: npm install --include=dev --build-from-source && npm run build
     startCommand: npm start
     envVars:
       - key: NODE_ENV
