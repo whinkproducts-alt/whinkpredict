@@ -94,33 +94,24 @@ const FAQ = [
 
 export default function HomePage() {
   return (
-    <div className="min-h-screen" style={{ background: 'var(--bg-base)' }}>
+    <div className="marketing-site min-h-screen">
       <Navbar />
 
       {/* ========== HERO ========== */}
-      <section className="relative pt-40 pb-28 px-6 overflow-hidden">
-        {/* Layered background glows */}
-        <div className="hero-glow-1" />
-        <div className="hero-glow-2" />
-        <div className="hero-glow-3" />
-        {/* Grid overlay */}
-        <div className="hero-grid" />
-
-        <div className="max-w-6xl mx-auto relative z-10">
-          <div className="text-center max-w-4xl mx-auto">
+      <section className="relative pt-36 pb-0 overflow-hidden" style={{ background: 'linear-gradient(180deg, #0b0c0e 0%, #111820 100%)' }}>
+        <div className="max-w-7xl mx-auto grid lg:grid-cols-2 items-center gap-12 px-6 pb-20 relative z-10">
+          <div className="max-w-2xl">
             {/* Category badge */}
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-8 text-xs font-bold uppercase tracking-widest"
+            <div className="inline-flex items-center gap-2 py-2 mb-6 text-xs font-bold uppercase tracking-[0.18em]"
               style={{
-                background: 'rgba(56,182,255,0.08)',
-                border: '1px solid rgba(56,182,255,0.2)',
-                color: '#38B6FF',
+                color: '#77a4ff',
               }}>
               <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
               AI Sports Intelligence · By Whink Apps
             </div>
 
             {/* Main headline */}
-            <h1 className="text-6xl md:text-8xl font-black tracking-tight mb-6 leading-[0.9]">
+            <h1 className="text-6xl md:text-7xl font-black tracking-tight mb-6 leading-[0.94]">
               <span className="block text-white">Win Smarter.</span>
               <span className="block" style={{
                 background: 'linear-gradient(135deg, #38B6FF 0%, #00E5A0 50%, #CC944B 100%)',
@@ -130,12 +121,12 @@ export default function HomePage() {
               }}>Predict Better.</span>
             </h1>
 
-            <p className="text-xl text-slate-400 max-w-2xl mx-auto mb-10 leading-relaxed">
+            <p className="text-xl text-slate-300 max-w-xl mb-9 leading-relaxed">
               AI-powered sports predictions across football, basketball, tennis, NFL and more.
               <strong className="text-white"> 90%+ confidence. Every pick, every week.</strong>
             </p>
 
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
+            <div className="flex flex-col sm:flex-row items-center gap-4 mb-10">
               <Link href="/register" className="btn-primary text-base px-10 py-4 rounded-xl">
                 <Zap size={18} />
                 Start Free
@@ -149,7 +140,7 @@ export default function HomePage() {
             </div>
 
             {/* Trust micro-badges */}
-            <div className="flex flex-wrap items-center justify-center gap-6 text-sm text-slate-500">
+            <div className="flex flex-wrap items-center gap-5 text-sm text-slate-400">
               {[
                 { icon: CheckCircle, label: 'Verified accuracy' },
                 { icon: Shield, label: 'Transparent insights' },
@@ -163,16 +154,12 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* Hero stats grid */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-20">
-            {STATS.map(({ val, label, color }) => (
-              <div key={label} className="glass-card p-6 text-center relative overflow-hidden group glass-card-hover">
-                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-                  style={{ background: `radial-gradient(ellipse at 50% 0%, ${color}15, transparent 70%)` }} />
-                <div className="text-4xl font-black mb-1 relative z-10" style={{ color }}>{val}</div>
-                <div className="text-xs text-slate-500 font-semibold uppercase tracking-wider relative z-10">{label}</div>
-              </div>
-            ))}
+          <div className="prediction-console" aria-label="WhinkPredict AI analytics interface">
+            <div className="console-panel one"><p>Live signal</p><span style={{ '--level': '82%' } as React.CSSProperties} /><span style={{ '--level': '63%' } as React.CSSProperties} /><span style={{ '--level': '91%' } as React.CSSProperties} /></div>
+            <div className="console-panel two"><p>Model confidence</p><span style={{ '--level': '94%' } as React.CSSProperties} /><span style={{ '--level': '76%' } as React.CSSProperties} /><span style={{ '--level': '88%' } as React.CSSProperties} /></div>
+            <div className="console-ring" />
+            <div className="console-panel three"><p>Prediction engine</p><span style={{ '--level': '72%' } as React.CSSProperties} /><span style={{ '--level': '85%' } as React.CSSProperties} /><span style={{ '--level': '57%' } as React.CSSProperties} /></div>
+            <div className="console-panel four"><p>Market data</p><span style={{ '--level': '68%' } as React.CSSProperties} /><span style={{ '--level': '89%' } as React.CSSProperties} /><span style={{ '--level': '74%' } as React.CSSProperties} /></div>
           </div>
         </div>
 
