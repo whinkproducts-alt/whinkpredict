@@ -9,17 +9,17 @@ import {
 } from 'lucide-react'
 
 const DEMO_PREDICTIONS = [
-  { homeTeam: 'Manchester City', awayTeam: 'Arsenal', league: 'Premier League', country: 'England', prediction: '1X', confidence: 89, tier: 'high', odds: 2.15, isPremium: false },
-  { homeTeam: 'Real Madrid', awayTeam: 'Barcelona', league: 'La Liga', country: 'Spain', prediction: '1', confidence: 84, tier: 'high', odds: 1.92, isPremium: false },
-  { homeTeam: 'Bayern Munich', awayTeam: 'PSG', league: 'Champions League', country: 'Europe', prediction: 'GG', confidence: 91, tier: 'optimal', odds: 1.75, isPremium: false },
-  { homeTeam: 'Inter Milan', awayTeam: 'AC Milan', league: 'Serie A', country: 'Italy', prediction: 'O2.5', confidence: 87, tier: 'high', odds: 2.05, isPremium: false },
+  { homeTeam: 'Man City', awayTeam: 'Man Utd', league: 'Premier League', country: 'England', prediction: 'O2.5', confidence: 94, tier: 'optimal', odds: 1.85, isPremium: false },
+  { homeTeam: 'Lakers', awayTeam: 'Celtics', league: 'NBA 2026', country: 'USA', prediction: 'O220.5', confidence: 91, tier: 'high', odds: 1.92, isPremium: false },
+  { homeTeam: 'Barcelona', awayTeam: 'PSG', league: 'La Liga 2026', country: 'Spain', prediction: 'O1.5', confidence: 93, tier: 'optimal', odds: 1.72, isPremium: false },
+  { homeTeam: 'KC Chiefs', awayTeam: 'Eagles', league: 'NFL 2026', country: 'USA', prediction: '-3', confidence: 92, tier: 'optimal', odds: 1.91, isPremium: false },
 ]
 
 const STATS = [
-  { val: '94%', label: 'Accuracy Rate', color: '#38B6FF' },
+  { val: '90%+', label: 'Confidence Floor', color: '#38B6FF' },
   { val: '50K+', label: 'Predictions Made', color: '#00E5A0' },
   { val: '5K+', label: 'Active Users', color: '#CC944B' },
-  { val: '+12%', label: 'Avg. ROI', color: '#38B6FF' },
+  { val: 'Every Fri', label: "Naye's Drops", color: '#38B6FF' },
 ]
 
 const FEATURES = [
@@ -58,10 +58,9 @@ const FEATURES = [
 ]
 
 const HOW_IT_WORKS = [
-  { step: '01', title: 'Data Collection', desc: 'Access comprehensive sports data from top leagues worldwide — real-time odds, historical patterns, team form, and head-to-head records.' },
-  { step: '02', title: 'AI Analysis', desc: 'Our ML models identify patterns and calculate probability scores for each match, factoring in over 200 data signals per prediction.' },
-  { step: '03', title: 'Confident Predictions', desc: 'Get actionable insights with confidence scores, transparent reasoning, and recommended pick types for every match.' },
-  { step: '04', title: 'Track Results', desc: 'Monitor your performance with transparent tracking and detailed analytics dashboards. Every outcome is recorded and analysed.' },
+  { step: '01', title: 'AI Scans Matches', desc: 'Our engine scans every fixture across football, basketball, tennis, NFL, MLB and more — processing team form, injuries, odds movements, and historical head-to-head data in real time.' },
+  { step: '02', title: 'Confidence Scoring', desc: 'Each match gets a precision confidence score. Only picks clearing the 90%+ threshold make it through. No noise, no filler — just the calls our model is most certain about.' },
+  { step: '03', title: 'Elite Weekly Calls', desc: 'Every Friday at midnight, Naye publishes 5–10 elite picks for the week ahead. The highest-conviction calls, across all sports, delivered on a consistent schedule.' },
 ]
 
 const PRICING = [
@@ -69,8 +68,8 @@ const PRICING = [
     name: 'Free',
     price: '$0',
     period: 'forever',
-    features: ['5 predictions per day', 'Match previews', 'Basic analytics', 'Worth Watching tier'],
-    cta: 'Get Started Free',
+    features: ['3 picks per day', 'Basic confidence scoring', 'Weekly performance reports', 'Worth Watching tier'],
+    cta: 'Start Free',
     href: '/register',
     highlight: false,
   },
@@ -78,20 +77,19 @@ const PRICING = [
     name: 'Premium',
     price: '$19',
     period: 'per month',
-    features: ["Naye's Picks (exclusive)", 'Unlimited predictions', 'Optimal & High Confidence', 'Full analytics dashboard', 'Performance tracking', 'Priority support'],
-    cta: 'Start Free Trial',
+    features: ["Naye's Weekly Picks (exclusive)", 'Unlimited picks', 'Full confidence scoring', 'Real-time odds monitoring', 'Advanced analytics dashboard', 'Performance tracking'],
+    cta: 'Upgrade to Premium',
     href: '/register?plan=premium',
     highlight: true,
   },
 ]
 
 const FAQ = [
-  { q: 'How accurate are WhinkPredict predictions?', a: 'Our AI model is trained on millions of historical data points. Optimal Picks (90%+ confidence) have historically delivered strong win rates, but no prediction is ever a guarantee — sports always carry an element of uncertainty.' },
-  { q: "What is Naye's Picks?", a: "Naye is WhinkPredict's AI mascot — our sharpest algorithm distilled into a persona. Every Friday at midnight, Naye drops 5–10 elite picks across all sports for the coming week, all with 90%+ confidence. These are the highest-conviction calls we publish." },
-  { q: "What does 'confidence level' mean?", a: "Every prediction is scored: Optimal Pick (🏆 90%+) is our highest conviction call, High Confidence (🔥 75–89%) is a strong signal worth serious consideration, and Worth Watching (👀 60–74%) is a value opportunity with moderate certainty." },
-  { q: 'What sports does WhinkPredict cover?', a: "WhinkPredict covers football (soccer), basketball, tennis, NFL, MLB, and more. Naye's Picks covers all sports. Live sport API will be connected before launch for real-time fixtures." },
-  { q: 'How does the free plan work?', a: 'The Free Plan gives you 5 predictions per day with match previews and basic analytics. Full access to Optimal Picks and Naye\'s exclusive weekly picks requires a Premium subscription.' },
-  { q: 'Can I cancel my subscription anytime?', a: 'Yes. Cancel anytime from your account dashboard. Your Premium access remains active until the end of your current billing period — no charges after cancellation.' },
+  { q: 'How accurate are WhinkPredict predictions?', a: 'Our AI model only surfaces picks that clear the 90%+ confidence threshold. Every prediction is backed by real-time data analysis across 200+ signals including team form, injuries, odds movements, and historical matchups. No prediction is ever a guarantee — sports always carry inherent uncertainty.' },
+  { q: 'What sports does WhinkPredict cover?', a: "WhinkPredict covers football (soccer), basketball, tennis, NFL, MLB, and more. Naye's Weekly Picks covers all major sports worldwide." },
+  { q: "What is Naye's Picks?", a: "Naye is WhinkPredict's AI prediction mascot. Every Friday at midnight, Naye publishes 5–10 elite picks for the coming week — all clearing 90%+ confidence. These are the highest-conviction calls we publish, across all sports." },
+  { q: 'Can I cancel my Premium subscription?', a: 'Yes. You can cancel anytime from your account dashboard under Settings. Your Premium access continues until the end of your current billing period. See our Refund Policy for details on the 7-day money-back guarantee.' },
+  { q: 'How often are predictions updated?', a: 'Predictions are generated and updated in real time as new data comes in. Naye\'s elite weekly picks refresh every Friday at midnight. Daily picks are available each morning for the day\'s fixtures.' },
 ]
 
 export default function HomePage() {
@@ -123,25 +121,24 @@ export default function HomePage() {
 
             {/* Main headline */}
             <h1 className="text-6xl md:text-8xl font-black tracking-tight mb-6 leading-[0.9]">
-              <span className="block text-white">Predict</span>
+              <span className="block text-white">Win Smarter.</span>
               <span className="block" style={{
                 background: 'linear-gradient(135deg, #38B6FF 0%, #00E5A0 50%, #CC944B 100%)',
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
                 backgroundClip: 'text',
-              }}>Better.</span>
-              <span className="block text-white">Win Together.</span>
+              }}>Predict Better.</span>
             </h1>
 
             <p className="text-xl text-slate-400 max-w-2xl mx-auto mb-10 leading-relaxed">
-              Join thousands of fans celebrating real wins — powered by elite AI sports predictions with 90%+ confidence.
-              Live games, live data, live analytics. <strong className="text-white">Built for every winner.</strong>
+              AI-powered sports predictions across football, basketball, tennis, NFL and more.
+              <strong className="text-white"> 90%+ confidence. Every pick, every week.</strong>
             </p>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
               <Link href="/register" className="btn-primary text-base px-10 py-4 rounded-xl">
                 <Zap size={18} />
-                Start Predicting Free
+                Start Free
               </Link>
               <Link href="/nayes-picks" className="btn-secondary text-base px-10 py-4 rounded-xl relative overflow-hidden group">
                 <span className="flex items-center gap-2">
@@ -417,7 +414,7 @@ export default function HomePage() {
             <p className="text-slate-400">From raw data to winning decisions — four precise steps.</p>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-6">
+          <div className="grid md:grid-cols-3 gap-6">
             {HOW_IT_WORKS.map((step, i) => (
               <div key={step.step} className="glass-card glass-card-hover p-8 flex gap-5 group">
                 <div className="shrink-0">
