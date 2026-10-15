@@ -1,6 +1,7 @@
 import { cookies } from 'next/headers'
 import { validateSession } from '@/lib/auth'
 import { User, Shield, CreditCard, Bell, Zap, Check, ChevronRight } from 'lucide-react'
+import UpgradeButton from '@/components/ui/UpgradeButton'
 
 export default async function SettingsPage() {
   const cookieStore = await cookies()
@@ -159,10 +160,7 @@ export default async function SettingsPage() {
                       ))}
                     </div>
 
-                    <button className="btn-primary w-full justify-center py-3 text-sm">
-                      <Zap size={14} />
-                      Upgrade to Premium — $19/mo
-                    </button>
+                    <UpgradeButton />
                     <p className="text-center text-xs text-slate-600 mt-2">Cancel anytime · Secure payment via Stripe</p>
                   </div>
                 </div>

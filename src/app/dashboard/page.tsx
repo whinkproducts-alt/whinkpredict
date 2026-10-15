@@ -8,6 +8,7 @@ import {
   TrendingUp, Target, Trophy, Zap, ArrowRight,
   Flame, Activity, Star, BarChart3, Clock, CheckCircle2
 } from 'lucide-react'
+import UpgradeButton from '@/components/ui/UpgradeButton'
 
 export default async function DashboardPage() {
   const cookieStore = await cookies()
@@ -74,11 +75,10 @@ export default async function DashboardPage() {
 
             <div className="flex items-center gap-3">
               {user.plan === 'free' && (
-                <Link href="/dashboard/settings#upgrade"
-                  className="btn-primary text-sm py-2 px-5">
-                  <Zap size={14} />
-                  Go Premium
-                </Link>
+                <UpgradeButton
+                  className="btn-primary text-sm py-2 px-5"
+                  label="Go Premium"
+                />
               )}
               <Link href="/nayes-picks"
                 className="flex items-center gap-2 text-sm px-4 py-2 rounded-xl font-semibold"
@@ -132,10 +132,10 @@ export default async function DashboardPage() {
                   <p className="text-sm text-slate-400">Unlock Naye&apos;s Picks, optimal confidence scores &amp; full analytics</p>
                 </div>
               </div>
-              <Link href="/dashboard/settings#upgrade"
-                className="btn-primary shrink-0 text-sm py-2.5 px-6">
-                Upgrade — $19/mo <ArrowRight size={14} />
-              </Link>
+              <UpgradeButton
+                className="btn-primary shrink-0 text-sm py-2.5 px-6"
+                label="Upgrade — $19/mo"
+              />
             </div>
           </div>
         )}

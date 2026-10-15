@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import './globals.css'
 import { initSchema } from '@/lib/db'
 import { PostHogProvider } from '@/components/PostHogProvider'
+import CookieConsent from '@/components/CookieConsent'
 import { Suspense } from 'react'
 
 // Initialize database schema on server startup
@@ -42,6 +43,7 @@ export default function RootLayout({
         <Suspense>
           <PostHogProvider>
             {children}
+            <CookieConsent />
           </PostHogProvider>
         </Suspense>
       </body>
