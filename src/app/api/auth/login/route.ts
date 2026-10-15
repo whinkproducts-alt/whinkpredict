@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
 
     // Successful login: clear rate limit, create session
     await clearRateLimit(rateLimitKey)
-    const token = await createSession(user.id)
+    const token = await createSession(user.id, ip)
 
     captureServerEvent(user.id, 'user_logged_in', {
       email: user.email,

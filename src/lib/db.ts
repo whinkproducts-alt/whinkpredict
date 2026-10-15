@@ -84,6 +84,9 @@ export async function initSchema(): Promise<void> {
       user_id TEXT NOT NULL,
       token TEXT UNIQUE NOT NULL,
       expires_at TEXT NOT NULL,
+      ip_address TEXT,
+      country TEXT,
+      city TEXT,
       created_at TEXT DEFAULT (datetime('now')),
       FOREIGN KEY (user_id) REFERENCES users(id)
     );
@@ -95,6 +98,20 @@ export async function initSchema(): Promise<void> {
       last_attempt TEXT DEFAULT (datetime('now'))
     );
   `)
+
+  // Migrations: add columns to existing tables if they don't exist yet
+  const migrations = [
+    `ALTER TABLE sessions ADD COLUMN ip_address TEXT`,
+    `ALTER TABLE sessions ADD COLUMN country TEXT`,
+    `ALTER TABLE sessions ADD COLUMN city TEXT`,
+  ]
+  for (const sql of migrations) {
+    try {
+      await db.execute(sql)
+    } catch {
+      // Column already exists — safe to ignore
+    }
+  }
 }
 
 export async function query<T = Record<string, unknown>>(

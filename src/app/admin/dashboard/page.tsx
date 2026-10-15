@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import {
   Users, TrendingUp, Zap, Shield, Download,
   LogOut, RefreshCw, Search, ChevronUp, ChevronDown,
-  BarChart3, Clock, Mail
+  BarChart3, MapPin, Mail
 } from 'lucide-react'
 
 interface User {
@@ -18,6 +18,9 @@ interface User {
   created_at: string
   last_login: string | null
   login_count: number
+  last_ip: string | null
+  last_country: string | null
+  last_city: string | null
 }
 
 interface Stats {
@@ -249,15 +252,18 @@ export default function AdminDashboard() {
                     </th>
                   ))}
                   <th style={{ padding: '0.75rem 1rem', textAlign: 'left', fontSize: '0.65rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.07em' }}>
+                    Location
+                  </th>
+                  <th style={{ padding: '0.75rem 1rem', textAlign: 'left', fontSize: '0.65rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.07em' }}>
                     Stripe
                   </th>
                 </tr>
               </thead>
               <tbody>
                 {loading ? (
-                  <tr><td colSpan={7} style={{ padding: '3rem', textAlign: 'center', color: '#475569' }}>Loading…</td></tr>
+                  <tr><td colSpan={8} style={{ padding: '3rem', textAlign: 'center', color: '#475569' }}>Loading…</td></tr>
                 ) : filtered.length === 0 ? (
-                  <tr><td colSpan={7} style={{ padding: '3rem', textAlign: 'center', color: '#475569' }}>No users found</td></tr>
+                  <tr><td colSpan={8} style={{ padding: '3rem', textAlign: 'center', color: '#475569' }}>No users found</td></tr>
                 ) : filtered.map((u, i) => (
                   <tr key={u.id} style={{
                     borderBottom: '1px solid rgba(255,255,255,0.04)',
@@ -288,6 +294,16 @@ export default function AdminDashboard() {
                     </td>
                     <td style={{ padding: '0.75rem 1rem', color: '#64748b', whiteSpace: 'nowrap' }}>{fmt(u.created_at)}</td>
                     <td style={{ padding: '0.75rem 1rem', color: '#64748b', whiteSpace: 'nowrap' }}>{fmt(u.last_login)}</td>
+                    <td style={{ padding: '0.75rem 1rem' }}>
+                      {(u.last_country || u.last_city) ? (
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', color: '#94a3b8', fontSize: '0.75rem' }}>
+                          <MapPin size={10} color="#64748b" />
+                          {[u.last_city, u.last_country].filter(Boolean).join(', ')}
+                        </span>
+                      ) : (
+                        <span style={{ color: '#334155', fontSize: '0.75rem' }}>—</span>
+                      )}
+                    </td>
                     <td style={{ padding: '0.75rem 1rem' }}>
                       {u.stripe_customer_id ? (
                         <a

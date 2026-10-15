@@ -20,13 +20,13 @@ export async function POST(req: NextRequest) {
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'strict',
     maxAge: 8 * 60 * 60,
-    path: '/admin',
+    path: '/',
   })
   return res
 }
 
 export async function DELETE() {
   const res = NextResponse.json({ success: true })
-  res.cookies.set(ADMIN_SESSION_KEY, '', { maxAge: 0, path: '/admin' })
+  res.cookies.set(ADMIN_SESSION_KEY, '', { maxAge: 0, path: '/' })
   return res
 }

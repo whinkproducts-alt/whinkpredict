@@ -101,14 +101,36 @@ export async function clearRateLimit(key: string): Promise<void> {
   await run('DELETE FROM rate_limits WHERE key = ?', [key])
 }
 
-export async function createSession(userId: string): Promise<string> {
+async function geoLookup(ip: string): Promise<{ country: string | null; city: string | null }> {
+  // Skip private/loopback IPs
+  if (!ip || ip === 'unknown' || ip.startsWith('127.') || ip.startsWith('192.168.') || ip.startsWith('10.') || ip === '::1') {
+    return { country: null, city: null }
+  }
+  try {
+    const res = await fetch(`http://ip-api.com/json/${ip}?fields=status,country,city`, {
+      signal: AbortSignal.timeout(2000),
+    })
+    const data = await res.json() as { status: string; country?: string; city?: string }
+    if (data.status === 'success') {
+      return { country: data.country ?? null, city: data.city ?? null }
+    }
+  } catch {
+    // Geo lookup failed — non-fatal
+  }
+  return { country: null, city: null }
+}
+
+export async function createSession(userId: string, ipAddress?: string): Promise<string> {
   const token = generateToken()
   const id = generateId()
   const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+  const ip = ipAddress || null
+
+  const { country, city } = ip ? await geoLookup(ip) : { country: null, city: null }
 
   await run(
-    'INSERT INTO sessions (id, user_id, token, expires_at) VALUES (?, ?, ?, ?)',
-    [id, userId, token, expiresAt]
+    'INSERT INTO sessions (id, user_id, token, expires_at, ip_address, country, city) VALUES (?, ?, ?, ?, ?, ?, ?)',
+    [id, userId, token, expiresAt, ip, country, city]
   )
 
   return token
