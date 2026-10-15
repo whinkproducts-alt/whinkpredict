@@ -1,9 +1,11 @@
 import Link from 'next/link'
 import Navbar from '@/components/marketing/Navbar'
 import { getNayesPicks, getNextFriday, getWeekRange } from '@/lib/nayes-picks'
-import { Flame, Target, Trophy, Zap, ArrowLeft, Calendar, Clock, TrendingUp, Star } from 'lucide-react'
+import { Flame, Target, Trophy, Zap, ArrowLeft, Calendar, Clock, TrendingUp, Star, Lock } from 'lucide-react'
+import { cookies } from 'next/headers'
+import { validateSession } from '@/lib/auth'
 
-export const revalidate = 3600 // revalidate hourly, picks only change Fridays
+export const dynamic = 'force-dynamic'
 
 const SPORT_EMOJI: Record<string, string> = {
   Football: '⚽',
@@ -38,6 +40,12 @@ const TIER_CONFIG = {
 }
 
 export default async function NayesPicksPage() {
+  // Check premium access
+  const cookieStore = await cookies()
+  const token = cookieStore.get('whink_session')?.value
+  const user = token ? await validateSession(token) : null
+  const isPremium = user?.plan === 'premium'
+
   const picks = getNayesPicks()
   const weekRange = getWeekRange()
   const nextFriday = getNextFriday()
@@ -177,8 +185,44 @@ export default async function NayesPicksPage() {
       <section className="py-20 px-6">
         <div className="max-w-5xl mx-auto space-y-12">
 
-          {/* Optimal picks */}
-          {optimalPicks.length > 0 && (
+          {/* Premium gate */}
+          {!isPremium && (
+            <div className="relative rounded-2xl overflow-hidden text-center py-16 px-8"
+              style={{
+                background: 'linear-gradient(135deg, rgba(56,182,255,0.06), rgba(0,229,160,0.04))',
+                border: '1px solid rgba(56,182,255,0.2)',
+              }}>
+              <div className="absolute inset-0 pointer-events-none opacity-[0.03]"
+                style={{ backgroundImage: 'radial-gradient(circle, #38B6FF 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
+              <div className="relative z-10">
+                <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-5"
+                  style={{ background: 'rgba(204,148,75,0.15)', border: '1px solid rgba(204,148,75,0.3)' }}>
+                  <Lock size={26} style={{ color: '#CC944B' }} />
+                </div>
+                <h2 className="text-2xl font-black text-white mb-2">Premium Members Only</h2>
+                <p className="text-slate-400 text-sm max-w-md mx-auto mb-8">
+                  Naye&apos;s Picks are exclusive to Premium subscribers. Upgrade now to access Naye&apos;s weekly elite selections, detailed reasoning, and 90%+ confidence picks.
+                </p>
+                <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                  <Link href="/dashboard/settings#upgrade"
+                    className="btn-primary px-8 py-3 text-sm font-bold">
+                    <Zap size={14} />
+                    Upgrade to Premium — $19/mo
+                  </Link>
+                  {!user && (
+                    <Link href="/register"
+                      className="btn-secondary px-8 py-3 text-sm font-bold">
+                      Create Free Account
+                    </Link>
+                  )}
+                </div>
+                <p className="text-xs text-slate-600 mt-4">Cancel anytime · Secure payment via Stripe</p>
+              </div>
+            </div>
+          )}
+
+          {/* Optimal picks — premium only */}
+          {isPremium && optimalPicks.length > 0 && (
             <div>
               <div className="flex items-center gap-3 mb-6">
                 <div className="flex items-center gap-2 px-4 py-2 rounded-full"
@@ -199,8 +243,8 @@ export default async function NayesPicksPage() {
             </div>
           )}
 
-          {/* High confidence picks */}
-          {highPicks.length > 0 && (
+          {/* High confidence picks — premium only */}
+          {isPremium && highPicks.length > 0 && (
             <div>
               <div className="flex items-center gap-3 mb-6">
                 <div className="flex items-center gap-2 px-4 py-2 rounded-full"
