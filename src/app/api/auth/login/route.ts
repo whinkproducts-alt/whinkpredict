@@ -7,6 +7,7 @@ import {
   recordFailedAttempt,
   clearRateLimit,
 } from '@/lib/auth'
+import { captureServerEvent } from '@/lib/posthog'
 
 export async function POST(req: NextRequest) {
   try {
@@ -48,6 +49,11 @@ export async function POST(req: NextRequest) {
     // Successful login: clear rate limit, create session
     await clearRateLimit(rateLimitKey)
     const token = await createSession(user.id)
+
+    captureServerEvent(user.id, 'user_logged_in', {
+      email: user.email,
+      plan: user.plan,
+    })
 
     const res = NextResponse.json({
       success: true,

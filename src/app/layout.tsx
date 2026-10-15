@@ -1,6 +1,8 @@
 import type { Metadata } from 'next'
 import './globals.css'
 import { initSchema } from '@/lib/db'
+import { PostHogProvider } from '@/components/PostHogProvider'
+import { Suspense } from 'react'
 
 // Initialize database schema on server startup
 // This runs once when the Next.js server boots
@@ -36,7 +38,13 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        <Suspense>
+          <PostHogProvider>
+            {children}
+          </PostHogProvider>
+        </Suspense>
+      </body>
     </html>
   )
 }

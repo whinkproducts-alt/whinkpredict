@@ -21,6 +21,8 @@
     "next": "16.4.0",
     "next-auth": "^5.0.0-beta.32",
     "postcss": "^8.5.29",
+    "posthog-js": "^1.438.10",
+    "posthog-node": "^5.56.1",
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "stripe": "^23.0.0",

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { stripe } from '@/lib/stripe'
 import { query, run } from '@/lib/db'
+import { captureServerEvent } from '@/lib/posthog'
 import type Stripe from 'stripe'
 
 export const dynamic = 'force-dynamic'
@@ -16,12 +17,25 @@ async function updateUserPlan(stripeCustomerId: string, plan: string, subscripti
     return
   }
 
+  const userId = users[0].id
+
   await run(
     `UPDATE users
      SET plan = ?, stripe_subscription_id = ?, subscription_status = ?, updated_at = datetime('now')
      WHERE stripe_customer_id = ?`,
     [plan, subscriptionId, status, stripeCustomerId]
   )
+
+  if (plan === 'premium' && status === 'active') {
+    captureServerEvent(userId, 'user_upgraded_to_premium', {
+      stripe_customer_id: stripeCustomerId,
+      subscription_id: subscriptionId,
+    })
+  } else if (plan === 'free') {
+    captureServerEvent(userId, 'user_downgraded_to_free', {
+      stripe_customer_id: stripeCustomerId,
+    })
+  }
 }
 
 export async function POST(req: NextRequest) {

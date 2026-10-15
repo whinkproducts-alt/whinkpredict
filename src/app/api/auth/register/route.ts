@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { query, run } from '@/lib/db'
 import { hashPassword, createSession, generateId, checkRateLimit, recordFailedAttempt } from '@/lib/auth'
+import { captureServerEvent } from '@/lib/posthog'
 
 export async function POST(req: NextRequest) {
   try {
@@ -46,6 +47,12 @@ export async function POST(req: NextRequest) {
     )
 
     const token = await createSession(userId)
+
+    captureServerEvent(userId, 'user_signed_up', {
+      name: name.trim(),
+      email: emailLower,
+      plan: 'free',
+    })
 
     const res = NextResponse.json(
       {
