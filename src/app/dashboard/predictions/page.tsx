@@ -7,10 +7,10 @@ import { SlidersHorizontal, Trophy, Flame, Eye, LayoutGrid } from 'lucide-react'
 export default async function PredictionsPage() {
   const cookieStore = await cookies()
   const token = cookieStore.get('whink_session')?.value!
-  const user = validateSession(token)!
+  const user = (await validateSession(token))!
 
-  seedPredictions()
-  const predictions = getPredictions(user.plan, 50)
+  await seedPredictions()
+  const predictions = await getPredictions(user.plan, 50)
 
   const optimal = predictions.filter(p => p.tier === 'optimal')
   const high = predictions.filter(p => p.tier === 'high')

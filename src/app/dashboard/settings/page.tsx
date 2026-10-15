@@ -5,7 +5,7 @@ import { User, Shield, CreditCard, Bell, Zap, Check, ChevronRight } from 'lucide
 export default async function SettingsPage() {
   const cookieStore = await cookies()
   const token = cookieStore.get('whink_session')?.value!
-  const user = validateSession(token)!
+  const user = (await validateSession(token))!
 
   const isPremium = user.plan === 'premium'
   const firstName = (user.name ?? 'User').split(' ')[0]

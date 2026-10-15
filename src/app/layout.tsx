@@ -1,5 +1,22 @@
 import type { Metadata } from 'next'
 import './globals.css'
+import { initSchema } from '@/lib/db'
+
+// Initialize database schema on server startup
+// This runs once when the Next.js server boots
+let schemaInitialized = false
+async function ensureSchema() {
+  if (schemaInitialized) return
+  try {
+    await initSchema()
+    schemaInitialized = true
+  } catch (err) {
+    console.error('DB schema init failed:', err)
+  }
+}
+
+// Kick off schema init immediately (fire-and-forget at module level)
+ensureSchema()
 
 export const metadata: Metadata = {
   title: 'WhinkPredict — AI Sports Predictions',

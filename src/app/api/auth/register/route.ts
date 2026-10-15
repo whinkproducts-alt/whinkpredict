@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-import getDb from '@/lib/db'
-import { hashPassword, createSession } from '@/lib/auth'
+import { query, run } from '@/lib/db'
+import { hashPassword, createSession, generateId, checkRateLimit, recordFailedAttempt } from '@/lib/auth'
 
 export async function POST(req: NextRequest) {
   try {
+    const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
     const { name, email, password } = await req.json()
 
     if (!name || !email || !password) {
@@ -14,26 +15,45 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Password must be at least 8 characters' }, { status: 400 })
     }
 
-    const emailLower = email.toLowerCase().trim()
-    const db = getDb()
+    // Rate limit registrations per IP: max 5 per 15 minutes
+    const rateLimitKey = `register:${ip}`
+    const rateCheck = await checkRateLimit(rateLimitKey)
+    if (!rateCheck.allowed) {
+      return NextResponse.json(
+        { error: `Too many registration attempts. Try again in ${Math.ceil((rateCheck.retryAfter || 1800) / 60)} minutes.` },
+        { status: 429 }
+      )
+    }
 
-    const existing = db.prepare('SELECT id FROM users WHERE email = ?').get(emailLower)
-    if (existing) {
+    const emailLower = email.toLowerCase().trim()
+
+    const existing = await query<{ id: string }>(
+      'SELECT id FROM users WHERE email = ?',
+      [emailLower]
+    )
+
+    if (existing.length > 0) {
+      await recordFailedAttempt(rateLimitKey)
       return NextResponse.json({ error: 'An account with this email already exists' }, { status: 409 })
     }
 
     const passwordHash = hashPassword(password)
-    const userId = require('crypto').randomBytes(16).toString('hex')
-    const result = db.prepare(
-      'INSERT INTO users (id, name, email, password, plan) VALUES (?, ?, ?, ?, ?)'
-    ).run(userId, name.trim(), emailLower, passwordHash, 'free')
+    const userId = generateId()
 
-    const token = createSession(userId)
+    await run(
+      'INSERT INTO users (id, name, email, password, plan) VALUES (?, ?, ?, ?, ?)',
+      [userId, name.trim(), emailLower, passwordHash, 'free']
+    )
 
-    const res = NextResponse.json({
-      success: true,
-      user: { id: userId, name: name.trim(), email: emailLower, plan: 'free' },
-    }, { status: 201 })
+    const token = await createSession(userId)
+
+    const res = NextResponse.json(
+      {
+        success: true,
+        user: { id: userId, name: name.trim(), email: emailLower, plan: 'free' },
+      },
+      { status: 201 }
+    )
 
     res.cookies.set('whink_session', token, {
       httpOnly: true,
@@ -42,6 +62,7 @@ export async function POST(req: NextRequest) {
       maxAge: 60 * 60 * 24 * 7,
       path: '/',
     })
+
     return res
   } catch (err) {
     console.error('Register error:', err)

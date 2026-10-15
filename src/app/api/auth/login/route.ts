@@ -1,32 +1,67 @@
 import { NextRequest, NextResponse } from 'next/server'
-import getDb from '@/lib/db'
-import { verifyPassword, createSession } from '@/lib/auth'
+import { query } from '@/lib/db'
+import {
+  verifyPassword,
+  createSession,
+  checkRateLimit,
+  recordFailedAttempt,
+  clearRateLimit,
+} from '@/lib/auth'
 
 export async function POST(req: NextRequest) {
   try {
+    const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
     const { email, password } = await req.json()
 
     if (!email || !password) {
       return NextResponse.json({ error: 'Email and password required' }, { status: 400 })
     }
 
-    const db = getDb()
-    const user = db.prepare('SELECT * FROM users WHERE email = ?').get(email.toLowerCase().trim()) as any
+    const rateLimitKey = `login:${ip}:${email.toLowerCase().trim()}`
+    const rateCheck = await checkRateLimit(rateLimitKey)
+
+    if (!rateCheck.allowed) {
+      return NextResponse.json(
+        { error: `Too many attempts. Try again in ${Math.ceil((rateCheck.retryAfter || 1800) / 60)} minutes.` },
+        {
+          status: 429,
+          headers: { 'Retry-After': String(rateCheck.retryAfter || 1800) },
+        }
+      )
+    }
+
+    const users = await query<{
+      id: string
+      name: string | null
+      email: string
+      password: string
+      plan: string
+    }>('SELECT * FROM users WHERE email = ?', [email.toLowerCase().trim()])
+
+    const user = users[0]
 
     if (!user || !verifyPassword(password, user.password)) {
+      await recordFailedAttempt(rateLimitKey)
       return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 })
     }
 
-    const token = createSession(String(user.id))
+    // Successful login: clear rate limit, create session
+    await clearRateLimit(rateLimitKey)
+    const token = await createSession(user.id)
 
-    const res = NextResponse.json({ success: true, user: { id: user.id, name: user.name, email: user.email, plan: user.plan } })
+    const res = NextResponse.json({
+      success: true,
+      user: { id: user.id, name: user.name, email: user.email, plan: user.plan },
+    })
+
     res.cookies.set('whink_session', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      maxAge: 60 * 60 * 24 * 7, // 7 days
+      maxAge: 60 * 60 * 24 * 7,
       path: '/',
     })
+
     return res
   } catch (err) {
     console.error('Login error:', err)

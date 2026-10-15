@@ -1,5 +1,5 @@
 import crypto from 'crypto'
-import getDb from './db'
+import { query, run } from './db'
 
 export function hashPassword(password: string): string {
   const salt = crypto.randomBytes(16).toString('hex')
@@ -8,9 +8,15 @@ export function hashPassword(password: string): string {
 }
 
 export function verifyPassword(password: string, stored: string): boolean {
-  const [salt, hash] = stored.split(':')
-  const inputHash = crypto.scryptSync(password, salt, 64).toString('hex')
-  return hash === inputHash
+  try {
+    const [salt, hash] = stored.split(':')
+    if (!salt || !hash) return false
+    const inputHash = crypto.scryptSync(password, salt, 64).toString('hex')
+    // Constant-time comparison to prevent timing attacks
+    return crypto.timingSafeEqual(Buffer.from(hash, 'hex'), Buffer.from(inputHash, 'hex'))
+  } catch {
+    return false
+  }
 }
 
 export function generateId(): string {
@@ -21,32 +27,115 @@ export function generateToken(): string {
   return crypto.randomBytes(32).toString('hex')
 }
 
-export function createSession(userId: string): string {
-  const db = getDb()
+// Rate limiting: max 5 attempts per IP per 15 minutes, then 30-min lockout
+const MAX_ATTEMPTS = 5
+const WINDOW_MINUTES = 15
+const LOCKOUT_MINUTES = 30
+
+export async function checkRateLimit(key: string): Promise<{ allowed: boolean; retryAfter?: number }> {
+  const rows = await query<{
+    attempts: number
+    locked_until: string | null
+    last_attempt: string
+  }>('SELECT attempts, locked_until, last_attempt FROM rate_limits WHERE key = ?', [key])
+
+  const now = new Date()
+
+  if (rows.length > 0) {
+    const row = rows[0]
+
+    // Check if currently locked
+    if (row.locked_until) {
+      const lockedUntil = new Date(row.locked_until)
+      if (now < lockedUntil) {
+        const retryAfter = Math.ceil((lockedUntil.getTime() - now.getTime()) / 1000)
+        return { allowed: false, retryAfter }
+      }
+    }
+
+    // Check if window has expired — reset if so
+    const lastAttempt = new Date(row.last_attempt)
+    const windowExpiry = new Date(lastAttempt.getTime() + WINDOW_MINUTES * 60 * 1000)
+    if (now > windowExpiry) {
+      await run(
+        'DELETE FROM rate_limits WHERE key = ?',
+        [key]
+      )
+      return { allowed: true }
+    }
+
+    // Within window — check attempt count
+    if (row.attempts >= MAX_ATTEMPTS) {
+      const lockedUntil = new Date(now.getTime() + LOCKOUT_MINUTES * 60 * 1000).toISOString()
+      await run(
+        'UPDATE rate_limits SET locked_until = ? WHERE key = ?',
+        [lockedUntil, key]
+      )
+      return { allowed: false, retryAfter: LOCKOUT_MINUTES * 60 }
+    }
+  }
+
+  return { allowed: true }
+}
+
+export async function recordFailedAttempt(key: string): Promise<void> {
+  const rows = await query<{ attempts: number }>(
+    'SELECT attempts FROM rate_limits WHERE key = ?',
+    [key]
+  )
+
+  if (rows.length === 0) {
+    await run(
+      'INSERT INTO rate_limits (key, attempts, last_attempt) VALUES (?, 1, datetime(\'now\'))',
+      [key]
+    )
+  } else {
+    await run(
+      'UPDATE rate_limits SET attempts = attempts + 1, last_attempt = datetime(\'now\') WHERE key = ?',
+      [key]
+    )
+  }
+}
+
+export async function clearRateLimit(key: string): Promise<void> {
+  await run('DELETE FROM rate_limits WHERE key = ?', [key])
+}
+
+export async function createSession(userId: string): Promise<string> {
   const token = generateToken()
   const id = generateId()
   const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
 
-  db.prepare(`
-    INSERT INTO sessions (id, user_id, token, expires_at)
-    VALUES (?, ?, ?, ?)
-  `).run(id, userId, token, expiresAt)
+  await run(
+    'INSERT INTO sessions (id, user_id, token, expires_at) VALUES (?, ?, ?, ?)',
+    [id, userId, token, expiresAt]
+  )
 
   return token
 }
 
-export function validateSession(token: string): { id: string; email: string; name: string | null; plan: string } | null {
-  const db = getDb()
-  const session = db.prepare(`
-    SELECT s.user_id, s.expires_at, u.email, u.name, u.plan
-    FROM sessions s
-    JOIN users u ON u.id = s.user_id
-    WHERE s.token = ?
-  `).get(token) as any
+export async function validateSession(
+  token: string
+): Promise<{ id: string; email: string; name: string | null; plan: string } | null> {
+  const rows = await query<{
+    user_id: string
+    expires_at: string
+    email: string
+    name: string | null
+    plan: string
+  }>(
+    `SELECT s.user_id, s.expires_at, u.email, u.name, u.plan
+     FROM sessions s
+     JOIN users u ON u.id = s.user_id
+     WHERE s.token = ?`,
+    [token]
+  )
 
-  if (!session) return null
+  if (rows.length === 0) return null
+
+  const session = rows[0]
   if (new Date(session.expires_at) < new Date()) {
-    db.prepare('DELETE FROM sessions WHERE token = ?').run(token)
+    await run('DELETE FROM sessions WHERE token = ?', [token])
     return null
   }
 
@@ -58,7 +147,11 @@ export function validateSession(token: string): { id: string; email: string; nam
   }
 }
 
-export function deleteSession(token: string): void {
-  const db = getDb()
-  db.prepare('DELETE FROM sessions WHERE token = ?').run(token)
+export async function deleteSession(token: string): Promise<void> {
+  await run('DELETE FROM sessions WHERE token = ?', [token])
+}
+
+export async function rotateSession(oldToken: string, userId: string): Promise<string> {
+  await deleteSession(oldToken)
+  return createSession(userId)
 }

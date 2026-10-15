@@ -9,7 +9,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   if (!token) redirect('/login')
 
-  const user = validateSession(token)
+  const user = await validateSession(token)
   if (!user) redirect('/login')
 
   return (

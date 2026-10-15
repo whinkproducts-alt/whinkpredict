@@ -12,10 +12,10 @@ import {
 export default async function DashboardPage() {
   const cookieStore = await cookies()
   const token = cookieStore.get('whink_session')?.value!
-  const user = validateSession(token)!
+  const user = (await validateSession(token))!
 
-  seedPredictions()
-  const predictions = getPredictions(user.plan, 6)
+  await seedPredictions()
+  const predictions = await getPredictions(user.plan, 6)
   const stats = getStats()
   const nayePicks = getNayesPicks().slice(0, 3)
 
@@ -39,12 +39,10 @@ export default async function DashboardPage() {
           background: 'linear-gradient(135deg, rgba(56,182,255,0.05) 0%, rgba(0,229,160,0.03) 50%, rgba(204,148,75,0.02) 100%)',
           borderBottom: '1px solid rgba(255,255,255,0.05)',
         }}>
-        {/* Subtle glow */}
         <div className="absolute top-0 right-0 w-96 h-64 rounded-full pointer-events-none opacity-30"
           style={{ background: 'radial-gradient(ellipse, rgba(56,182,255,0.15) 0%, transparent 70%)', filter: 'blur(40px)' }} />
 
         <div className="relative z-10">
-          {/* Brand bar */}
           <div className="flex items-center gap-2 mb-5 text-xs text-slate-600">
             <span style={{ color: 'rgba(56,182,255,0.5)' }}>Whink Group</span>
             <span>›</span>

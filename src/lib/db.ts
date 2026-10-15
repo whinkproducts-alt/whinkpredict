@@ -1,29 +1,37 @@
-import Database from 'better-sqlite3'
-import path from 'path'
-import fs from 'fs'
+import { createClient, type Client } from '@libsql/client'
 
-const DB_PATH = process.env.DATABASE_URL || path.join(process.cwd(), 'whinkpredict.db')
+let client: Client | null = null
 
-let db: Database.Database
+function getDb(): Client {
+  if (!client) {
+    const url = process.env.TURSO_DATABASE_URL
+    const authToken = process.env.TURSO_AUTH_TOKEN
 
-function getDb(): Database.Database {
-  if (!db) {
-    db = new Database(DB_PATH)
-    db.pragma('journal_mode = WAL')
-    db.pragma('foreign_keys = ON')
-    initSchema(db)
+    if (!url) {
+      throw new Error('TURSO_DATABASE_URL environment variable is required')
+    }
+
+    client = createClient({
+      url,
+      authToken: authToken || undefined,
+    })
   }
-  return db
+  return client
 }
 
-function initSchema(db: Database.Database) {
-  db.exec(`
+export async function initSchema(): Promise<void> {
+  const db = getDb()
+
+  await db.executeMultiple(`
     CREATE TABLE IF NOT EXISTS users (
       id TEXT PRIMARY KEY,
       email TEXT UNIQUE NOT NULL,
       name TEXT,
       password TEXT,
       plan TEXT DEFAULT 'free',
+      stripe_customer_id TEXT,
+      stripe_subscription_id TEXT,
+      subscription_status TEXT DEFAULT 'inactive',
       created_at TEXT DEFAULT (datetime('now')),
       updated_at TEXT DEFAULT (datetime('now'))
     );
@@ -79,7 +87,35 @@ function initSchema(db: Database.Database) {
       created_at TEXT DEFAULT (datetime('now')),
       FOREIGN KEY (user_id) REFERENCES users(id)
     );
+
+    CREATE TABLE IF NOT EXISTS rate_limits (
+      key TEXT PRIMARY KEY,
+      attempts INTEGER DEFAULT 0,
+      locked_until TEXT,
+      last_attempt TEXT DEFAULT (datetime('now'))
+    );
   `)
+}
+
+export async function query<T = Record<string, unknown>>(
+  sql: string,
+  args: (string | number | null | boolean)[] = []
+): Promise<T[]> {
+  const db = getDb()
+  const result = await db.execute({ sql, args })
+  return result.rows as unknown as T[]
+}
+
+export async function run(
+  sql: string,
+  args: (string | number | null | boolean)[] = []
+): Promise<{ rowsAffected: number; lastInsertRowid: string | number | bigint | null }> {
+  const db = getDb()
+  const result = await db.execute({ sql, args })
+  return {
+    rowsAffected: result.rowsAffected,
+    lastInsertRowid: result.lastInsertRowid ?? null,
+  }
 }
 
 export default getDb
