@@ -6,8 +6,9 @@ import { getNayesPicks } from '@/lib/nayes-picks'
 import Link from 'next/link'
 import {
   TrendingUp, Target, Trophy, Zap, ArrowRight,
-  Flame, Activity, Star, BarChart3, Clock, CheckCircle2
+  Flame, Activity, BarChart3, Clock, Bell
 } from 'lucide-react'
+import { normalisePlan } from '@/lib/stripe'
 import UpgradeButton from '@/components/ui/UpgradeButton'
 
 export default async function DashboardPage() {
@@ -21,12 +22,13 @@ export default async function DashboardPage() {
   const nayePicks = getNayesPicks().slice(0, 3)
 
   const statCards = [
-    { label: 'Win Rate', value: `${stats.winRate}%`, sub: '+2.4% vs last week', icon: Trophy, color: '#00E5A0' },
     { label: "Today's Picks", value: stats.todaysPicks, sub: 'Updated live', icon: Target, color: '#38B6FF' },
     { label: 'Avg Confidence', value: `${stats.avgConfidence}%`, sub: 'Across all tiers', icon: TrendingUp, color: '#CC944B' },
-    { label: 'Active Users', value: stats.activeUsers.toLocaleString(), sub: 'Predicting right now', icon: Activity, color: '#38B6FF' },
+    { label: 'Sports Covered', value: `${stats.sportsCount}+`, sub: 'EPL · NBA · NFL · UCL · La Liga', icon: Trophy, color: '#00E5A0' },
+    { label: 'Sync Interval', value: `${stats.syncIntervalHours}hr`, sub: 'Live odds refreshed', icon: Activity, color: '#38B6FF' },
   ]
 
+  const plan = normalisePlan(user.plan)
   const firstName = (user.name ?? 'User').split(' ')[0]
   const hour = new Date().getHours()
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening'
@@ -74,10 +76,25 @@ export default async function DashboardPage() {
             </div>
 
             <div className="flex items-center gap-3">
-              {user.plan === 'free' && (
+              {plan === 'scout' && (
                 <UpgradeButton
                   className="btn-primary text-sm py-2 px-5"
-                  label="Go Premium"
+                  label="Get Edge — $4.99/mo"
+                  plan="edge"
+                />
+              )}
+              {plan === 'edge' && (
+                <UpgradeButton
+                  className="btn-primary text-sm py-2 px-5"
+                  label="Go Sharp — $12/mo"
+                  plan="sharp"
+                />
+              )}
+              {plan === 'sharp' && (
+                <UpgradeButton
+                  className="btn-primary text-sm py-2 px-5"
+                  label="Join Naye — $19/mo"
+                  plan="naye"
                 />
               )}
               <Link href="/nayes-picks"
@@ -112,15 +129,15 @@ export default async function DashboardPage() {
           ))}
         </div>
 
-        {/* Upgrade banner for free users */}
-        {user.plan === 'free' && (
+        {/* Upgrade banners — tailored per plan */}
+        {plan === 'scout' && (
           <div className="relative overflow-hidden rounded-2xl p-5"
             style={{
               background: 'linear-gradient(135deg, rgba(56,182,255,0.08), rgba(0,229,160,0.05))',
               border: '1px solid rgba(56,182,255,0.2)',
             }}>
             <div className="absolute right-4 top-1/2 -translate-y-1/2 text-6xl opacity-10 font-black"
-              style={{ color: '#38B6FF' }}>PRO</div>
+              style={{ color: '#38B6FF' }}>EDGE</div>
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 relative z-10">
               <div className="flex items-center gap-4">
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center"
@@ -128,13 +145,68 @@ export default async function DashboardPage() {
                   <Zap size={18} style={{ color: '#38B6FF' }} />
                 </div>
                 <div>
-                  <p className="font-bold text-white">You&apos;re on the Free plan</p>
-                  <p className="text-sm text-slate-400">Unlock Naye&apos;s Picks, optimal confidence scores &amp; full analytics</p>
+                  <p className="font-bold text-white">You&apos;re on Scout — 1 pick/day</p>
+                  <p className="text-sm text-slate-400">Edge gives you 10 picks/day, full confidence scores &amp; all sports for $4.99/mo</p>
                 </div>
               </div>
               <UpgradeButton
                 className="btn-primary shrink-0 text-sm py-2.5 px-6"
-                label="Upgrade — $19/mo"
+                label="Get Edge — $4.99/mo"
+                plan="edge"
+              />
+            </div>
+          </div>
+        )}
+        {plan === 'edge' && (
+          <div className="relative overflow-hidden rounded-2xl p-5"
+            style={{
+              background: 'linear-gradient(135deg, rgba(0,229,160,0.08), rgba(56,182,255,0.05))',
+              border: '1px solid rgba(0,229,160,0.2)',
+            }}>
+            <div className="absolute right-4 top-1/2 -translate-y-1/2 text-6xl opacity-10 font-black"
+              style={{ color: '#00E5A0' }}>SHARP</div>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 relative z-10">
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center"
+                  style={{ background: 'rgba(0,229,160,0.15)', border: '1px solid rgba(0,229,160,0.25)' }}>
+                  <Bell size={18} style={{ color: '#00E5A0' }} />
+                </div>
+                <div>
+                  <p className="font-bold text-white">Ready to go Sharp?</p>
+                  <p className="text-sm text-slate-400">Unlimited picks, real-time line movement alerts &amp; full analytics — $12/mo</p>
+                </div>
+              </div>
+              <UpgradeButton
+                className="btn-primary shrink-0 text-sm py-2.5 px-6"
+                label="Go Sharp — $12/mo"
+                plan="sharp"
+              />
+            </div>
+          </div>
+        )}
+        {plan === 'sharp' && (
+          <div className="relative overflow-hidden rounded-2xl p-5"
+            style={{
+              background: 'linear-gradient(135deg, rgba(204,148,75,0.08), rgba(0,229,160,0.05))',
+              border: '1px solid rgba(204,148,75,0.2)',
+            }}>
+            <div className="absolute right-4 top-1/2 -translate-y-1/2 text-6xl opacity-10 font-black"
+              style={{ color: '#CC944B' }}>NAYE</div>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 relative z-10">
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center"
+                  style={{ background: 'rgba(204,148,75,0.15)', border: '1px solid rgba(204,148,75,0.25)' }}>
+                  <Flame size={18} style={{ color: '#CC944B' }} />
+                </div>
+                <div>
+                  <p className="font-bold text-white">Naye&apos;s Friday drops are live</p>
+                  <p className="text-sm text-slate-400">Highest conviction picks. Curated weekly. Exclusive to Naye tier — $19/mo</p>
+                </div>
+              </div>
+              <UpgradeButton
+                className="btn-primary shrink-0 text-sm py-2.5 px-6"
+                label="Join Naye — $19/mo"
+                plan="naye"
               />
             </div>
           </div>

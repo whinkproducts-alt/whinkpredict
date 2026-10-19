@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { validateSession } from '@/lib/auth'
-import { stripe, STRIPE_PREMIUM_PRICE_ID, isStripeEnabled } from '@/lib/stripe'
+import { stripe, getPriceIdForPlan, isStripeEnabled, normalisePlan } from '@/lib/stripe'
 import { query, run } from '@/lib/db'
+
+const UPGRADEABLE_PLANS = ['edge', 'sharp', 'naye']
 
 export async function POST(req: NextRequest) {
   if (!isStripeEnabled()) {
@@ -18,8 +20,24 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid session' }, { status: 401 })
   }
 
-  if (user.plan === 'premium') {
-    return NextResponse.json({ error: 'You are already on the Premium plan' }, { status: 400 })
+  const body = await req.json().catch(() => ({}))
+  const requestedPlan: string = body.plan || 'naye'
+
+  if (!UPGRADEABLE_PLANS.includes(requestedPlan)) {
+    return NextResponse.json({ error: 'Invalid plan selected' }, { status: 400 })
+  }
+
+  const currentPlan = normalisePlan(user.plan)
+  if (currentPlan === requestedPlan) {
+    return NextResponse.json({ error: `You are already on the ${requestedPlan} plan` }, { status: 400 })
+  }
+
+  const priceId = getPriceIdForPlan(requestedPlan)
+  if (!priceId) {
+    return NextResponse.json(
+      { error: `The ${requestedPlan} plan is not yet available. Check back soon.` },
+      { status: 503 }
+    )
   }
 
   try {
@@ -38,7 +56,7 @@ export async function POST(req: NextRequest) {
       })
       customerId = customer.id
       await run(
-        'UPDATE users SET stripe_customer_id = ?, updated_at = datetime(\'now\') WHERE id = ?',
+        `UPDATE users SET stripe_customer_id = ?, updated_at = datetime('now') WHERE id = ?`,
         [customerId, user.id]
       )
     }
@@ -50,17 +68,17 @@ export async function POST(req: NextRequest) {
       mode: 'subscription',
       line_items: [
         {
-          price: STRIPE_PREMIUM_PRICE_ID,
+          price: priceId,
           quantity: 1,
         },
       ],
-      success_url: `${baseUrl}/dashboard?upgraded=true`,
+      success_url: `${baseUrl}/dashboard?upgraded=true&plan=${requestedPlan}`,
       cancel_url: `${baseUrl}/pricing`,
       subscription_data: {
         trial_period_days: 7,
-        metadata: { whink_user_id: user.id },
+        metadata: { whink_user_id: user.id, plan: requestedPlan },
       },
-      metadata: { whink_user_id: user.id },
+      metadata: { whink_user_id: user.id, plan: requestedPlan },
     })
 
     return NextResponse.json({ url: session.url })

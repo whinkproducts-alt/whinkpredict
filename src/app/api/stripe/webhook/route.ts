@@ -1,12 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { stripe } from '@/lib/stripe'
+import { stripe, planFromPriceId } from '@/lib/stripe'
 import { query, run } from '@/lib/db'
 import { captureServerEvent } from '@/lib/posthog'
 import type Stripe from 'stripe'
 
 export const dynamic = 'force-dynamic'
 
-async function updateUserPlan(stripeCustomerId: string, plan: string, subscriptionId: string | null, status: string) {
+async function updateUserPlan(
+  stripeCustomerId: string,
+  plan: string,
+  subscriptionId: string | null,
+  status: string
+) {
   const users = await query<{ id: string }>(
     'SELECT id FROM users WHERE stripe_customer_id = ?',
     [stripeCustomerId]
@@ -26,16 +31,29 @@ async function updateUserPlan(stripeCustomerId: string, plan: string, subscripti
     [plan, subscriptionId, status, stripeCustomerId]
   )
 
-  if (plan === 'premium' && status === 'active') {
-    captureServerEvent(userId, 'user_upgraded_to_premium', {
+  if (plan !== 'scout' && status === 'active') {
+    captureServerEvent(userId, 'user_upgraded', {
+      plan,
       stripe_customer_id: stripeCustomerId,
       subscription_id: subscriptionId,
     })
-  } else if (plan === 'free') {
-    captureServerEvent(userId, 'user_downgraded_to_free', {
+  } else if (plan === 'scout') {
+    captureServerEvent(userId, 'user_downgraded_to_scout', {
       stripe_customer_id: stripeCustomerId,
     })
   }
+}
+
+function getPlanFromSubscription(sub: Stripe.Subscription): string {
+  // Try to get the plan from subscription metadata first (set at checkout)
+  const metaPlan = sub.metadata?.plan
+  if (metaPlan && ['edge', 'sharp', 'naye'].includes(metaPlan)) return metaPlan
+
+  // Fall back to price ID lookup
+  const priceId = sub.items?.data?.[0]?.price?.id
+  if (priceId) return planFromPriceId(priceId)
+
+  return 'scout'
 }
 
 export async function POST(req: NextRequest) {
@@ -70,9 +88,11 @@ export async function POST(req: NextRequest) {
       case 'checkout.session.completed': {
         const session = event.data.object as Stripe.Checkout.Session
         if (session.mode === 'subscription' && session.customer) {
+          // Prefer metadata plan from checkout session
+          const plan = session.metadata?.plan || 'naye'
           await updateUserPlan(
             session.customer as string,
-            'premium',
+            plan,
             session.subscription as string,
             'active'
           )
@@ -83,9 +103,10 @@ export async function POST(req: NextRequest) {
       case 'customer.subscription.updated': {
         const sub = event.data.object as Stripe.Subscription
         const isActive = ['active', 'trialing'].includes(sub.status)
+        const plan = isActive ? getPlanFromSubscription(sub) : 'scout'
         await updateUserPlan(
           sub.customer as string,
-          isActive ? 'premium' : 'free',
+          plan,
           sub.id,
           sub.status
         )
@@ -96,7 +117,7 @@ export async function POST(req: NextRequest) {
         const sub = event.data.object as Stripe.Subscription
         await updateUserPlan(
           sub.customer as string,
-          'free',
+          'scout',
           null,
           'cancelled'
         )
@@ -108,7 +129,7 @@ export async function POST(req: NextRequest) {
         if (invoice.customer) {
           await updateUserPlan(
             invoice.customer as string,
-            'free',
+            'scout',
             invoice.subscription || null,
             'past_due'
           )
@@ -117,7 +138,6 @@ export async function POST(req: NextRequest) {
       }
 
       default:
-        // Unhandled event type — log and ignore
         console.log('Unhandled Stripe event:', event.type)
     }
 

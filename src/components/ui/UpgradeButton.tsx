@@ -6,11 +6,13 @@ import { Zap } from 'lucide-react'
 interface UpgradeButtonProps {
   className?: string
   label?: string
+  plan?: 'edge' | 'sharp' | 'naye'
 }
 
 export default function UpgradeButton({
   className = 'btn-primary w-full justify-center py-3 text-sm',
-  label = 'Upgrade to Premium — $19/mo',
+  label = 'Upgrade to Naye — $19/mo',
+  plan = 'naye',
 }: UpgradeButtonProps) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -19,7 +21,11 @@ export default function UpgradeButton({
     setLoading(true)
     setError(null)
     try {
-      const res = await fetch('/api/stripe/checkout', { method: 'POST' })
+      const res = await fetch('/api/stripe/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ plan }),
+      })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Something went wrong')
       window.location.href = data.url
